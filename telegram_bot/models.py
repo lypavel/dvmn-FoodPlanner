@@ -22,7 +22,7 @@ class Client(models.Model):
 
 class Ingredient(models.Model):
     title = models.CharField('Название ингредиента', max_length=200)
-    image = models.ImageField('Изображение', blank=True)
+    image = models.ImageField('Изображение', upload_to='image', blank=True)
 
     def __str__(self):
         return self.title
@@ -35,7 +35,7 @@ class Ingredient(models.Model):
 
 class Recipe(models.Model):
     dish = models.CharField('Название блюда', max_length=100)
-    image = models.ImageField('Изображение', blank=True)
+    image = models.ImageField('Изображение', upload_to='image', blank=True)
     description = models.TextField('Описание блюда')
 
     ingredients = models.ManyToManyField(
@@ -72,12 +72,10 @@ class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        null=True,
         verbose_name='Рецепт')
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
-        null=True,
         verbose_name='Ингредиент рецепта')
 
     class Meta:
