@@ -1,5 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.conf import settings
+from django.http.response import Http404
+from django.shortcuts import get_object_or_404
 import telebot
 from telebot import custom_filters
 from telebot.handler_backends import State, StatesGroup
@@ -7,6 +9,8 @@ from telebot.storage import StateMemoryStorage
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, \
     Message, CallbackQuery
 
+
+from telegram_bot.models import Client
 from telegram_bot.management.commands.bot_utils import bot_buttons as btn
 from telegram_bot.management.commands.bot_utils import bot_messages as msg
 
@@ -21,6 +25,7 @@ class BotStates(StatesGroup):
     get_client_name = State()
     get_client_phone_number = State()
     show_recipe = State()
+    show_instructions = State()
 
 
 @bot.message_handler(commands=['start'])
@@ -28,7 +33,10 @@ def start(message: Message) -> None:
     # TODO: Add some images here and user msg.WELCOME as caption.
     bot.send_message(message.chat.id, msg.WELCOME)
 
-    client = False  # TODO: Check if client in db by his telegram id
+    try:
+        client = get_object_or_404(Client, telegram_id=message.from_user.id)
+    except Http404:
+        client = None
 
     if not client:
         inline_keyboard = InlineKeyboardMarkup(row_width=2)
@@ -124,7 +132,11 @@ def proccess_client_information(message: Message) -> None:
         user_name = data['user_name']
     user_phone = message.text
 
-    # TODO: Save user to db
+    Client.objects.create(
+        telegram_id=message.from_user.id,
+        name=user_name,
+        phonenumber=user_phone,
+    )
 
     inline_keyboard = InlineKeyboardMarkup(row_width=1)
     inline_keyboard.add(
@@ -150,12 +162,15 @@ def proccess_client_information(message: Message) -> None:
 def show_random_recipe(call: CallbackQuery) -> None:
     message = call.message
     chat_id = message.chat.id
+    bot.edit_message_reply_markup(chat_id, message.message_id)
 
     # TODO: get recipes from db, send image and description.
     # TODO: Add logic for changing recipes on every call of 'show recipe'
 
     inline_keyboard = InlineKeyboardMarkup(row_width=1)
     inline_keyboard.add(
+        InlineKeyboardButton(btn.SHOW_INSTRUCTIONS,
+                             callback_data='show_instructions'),
         InlineKeyboardButton(btn.ANOTHER_RECIPE, callback_data='new_recipe')
     )
 
@@ -168,6 +183,24 @@ def show_random_recipe(call: CallbackQuery) -> None:
     bot.set_state(
         message.from_user.id,
         BotStates.show_recipe, chat_id
+    )
+
+
+@bot.callback_query_handler(state=BotStates.show_recipe,
+                            func=lambda call: call.data == 'show_instructions')
+def show_recipe_instructions(call: CallbackQuery) -> None:
+    message = call.message
+    chat_id = message.chat.id
+    bot.edit_message_reply_markup(chat_id, message.message_id)
+
+    bot.send_message(
+        chat_id,
+        'Описание рецепта',
+    )
+
+    bot.set_state(
+        message.from_user.id,
+        BotStates.show_instructions, message.chat.id
     )
 
 
