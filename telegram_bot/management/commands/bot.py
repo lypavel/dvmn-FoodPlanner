@@ -10,7 +10,7 @@ from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton, \
     Message, CallbackQuery
 
 
-from telegram_bot.models import Client
+from telegram_bot.models import Client, Recipe
 from telegram_bot.management.commands.bot_utils import bot_buttons as btn
 from telegram_bot.management.commands.bot_utils import bot_messages as msg
 
@@ -30,7 +30,9 @@ class BotStates(StatesGroup):
 
 @bot.message_handler(commands=['start'])
 def start(message: Message) -> None:
-    # TODO: Add some images here and user msg.WELCOME as caption.
+    bot.reset_data(message.from_user.id, message.chat.id)
+
+    # TODO: Add some image here and msg.WELCOME as caption.
     bot.send_message(message.chat.id, msg.WELCOME)
 
     try:
@@ -49,6 +51,7 @@ def start(message: Message) -> None:
             msg.PD_AGREEMENT,
             reply_markup=inline_keyboard
         )
+
         bot.set_state(
             message.from_user.id,
             BotStates.approve_pd, message.chat.id
@@ -114,6 +117,7 @@ def get_client_name(call: CallbackQuery) -> None:
 @bot.message_handler(state=BotStates.get_client_name,
                      func=lambda message: True)
 def get_client_phone_number(message: Message):
+    # TODO: Validate user phone number?
     name = message.text
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
         data['user_name'] = name
@@ -159,13 +163,29 @@ def proccess_client_information(message: Message) -> None:
                             func=lambda call: call.data == 'new_recipe')
 @bot.callback_query_handler(state=BotStates.show_recipe,
                             func=lambda call: call.data == 'new_recipe')
-def show_random_recipe(call: CallbackQuery) -> None:
+def show_recipe(call: CallbackQuery) -> None:
     message = call.message
     chat_id = message.chat.id
+
+    with bot.retrieve_data(call.message.chat.id, call.message.chat.id) as data:
+        if not data.get('recipes'):
+            data['recipes'] = Recipe.objects.all()\
+                                .prefetch_related('ingredients')
+            data['recipes_count'] = data['recipes'].count()
+            data['current_recipe_index'] = 0
+        elif data['current_recipe_index'] < data['recipes_count'] - 1:
+            data['current_recipe_index'] += 1
+        else:
+            data['current_recipe_index'] = 0
+
+        current_recipe = data['recipes'][data['current_recipe_index']]
+
     bot.edit_message_reply_markup(chat_id, message.message_id)
 
-    # TODO: get recipes from db, send image and description.
-    # TODO: Add logic for changing recipes on every call of 'show recipe'
+    bot.send_message(
+        chat_id,
+        'TODO: Фото блюда.',
+    )
 
     inline_keyboard = InlineKeyboardMarkup(row_width=1)
     inline_keyboard.add(
@@ -176,8 +196,9 @@ def show_random_recipe(call: CallbackQuery) -> None:
 
     bot.send_message(
         chat_id,
-        'Рецепт',
-        reply_markup=inline_keyboard
+        msg.generate_recipe_main_info(current_recipe),
+        reply_markup=inline_keyboard,
+        parse_mode='markdown'
     )
 
     bot.set_state(
@@ -193,14 +214,19 @@ def show_recipe_instructions(call: CallbackQuery) -> None:
     chat_id = message.chat.id
     bot.edit_message_reply_markup(chat_id, message.message_id)
 
-    bot.send_message(
-        chat_id,
-        'Описание рецепта',
+    with bot.retrieve_data(call.message.chat.id, call.message.chat.id) as data:
+        current_recipe = data['recipes'][data['current_recipe_index']]
+
+    inline_keyboard = InlineKeyboardMarkup(row_width=1)
+    inline_keyboard.add(
+        InlineKeyboardButton(btn.ANOTHER_RECIPE, callback_data='new_recipe')
     )
 
-    bot.set_state(
-        message.from_user.id,
-        BotStates.show_instructions, message.chat.id
+    bot.send_message(
+        chat_id,
+        msg.generate_recipe_instructions(current_recipe),
+        reply_markup=inline_keyboard,
+        parse_mode='markdown'
     )
 
 
