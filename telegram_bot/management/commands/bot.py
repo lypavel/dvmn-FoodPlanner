@@ -14,6 +14,8 @@ from telegram_bot.models import Client, Recipe
 from telegram_bot.management.commands.bot_utils import bot_buttons as btn
 from telegram_bot.management.commands.bot_utils import bot_messages as msg
 
+from pathlib import Path
+
 
 state_storage = StateMemoryStorage()
 bot = telebot.TeleBot(token=settings.TELEGRAM_BOT_TOKEN,
@@ -32,8 +34,14 @@ class BotStates(StatesGroup):
 def start(message: Message) -> None:
     bot.reset_data(message.from_user.id, message.chat.id)
 
-    # TODO: Add some image here and msg.WELCOME as caption.
-    bot.send_message(message.chat.id, msg.WELCOME)
+    welcome_image = Path(settings.BASE_DIR) \
+        / settings.STATIC_URL[1:] \
+        / 'welcome.jpg'
+    bot.send_photo(
+        message.chat.id,
+        open(welcome_image, 'rb'),
+        caption=msg.WELCOME
+    )
 
     try:
         client = get_object_or_404(Client, telegram_id=message.from_user.id)
@@ -166,12 +174,15 @@ def proccess_client_information(message: Message) -> None:
 def show_recipe(call: CallbackQuery) -> None:
     message = call.message
     chat_id = message.chat.id
+    bot.edit_message_reply_markup(chat_id, message.message_id)
 
     with bot.retrieve_data(call.message.chat.id, call.message.chat.id) as data:
         if not data.get('recipes'):
             data['recipes'] = Recipe.objects.all()\
                                 .prefetch_related('ingredients')
             data['recipes_count'] = data['recipes'].count()
+            if data['recipes_count'] == 0:
+                return show_no_recipe_warning(chat_id)
             data['current_recipe_index'] = 0
         elif data['current_recipe_index'] < data['recipes_count'] - 1:
             data['current_recipe_index'] += 1
@@ -180,12 +191,14 @@ def show_recipe(call: CallbackQuery) -> None:
 
         current_recipe = data['recipes'][data['current_recipe_index']]
 
-    bot.edit_message_reply_markup(chat_id, message.message_id)
+    # TODO: Add default image if recipe.image does not exists
+    if current_recipe.image:
+        image_path = Path(settings.BASE_DIR) / current_recipe.image.url[1:]
 
-    bot.send_message(
-        chat_id,
-        'TODO: Фото блюда.',
-    )
+        bot.send_photo(
+            chat_id,
+            open(image_path, 'rb')
+        )
 
     inline_keyboard = InlineKeyboardMarkup(row_width=1)
     inline_keyboard.add(
@@ -227,6 +240,13 @@ def show_recipe_instructions(call: CallbackQuery) -> None:
         msg.generate_recipe_instructions(current_recipe),
         reply_markup=inline_keyboard,
         parse_mode='markdown'
+    )
+
+
+def show_no_recipe_warning(chat_id: str) -> None:
+    bot.send_message(
+        chat_id,
+        msg.NO_RECIPES
     )
 
 
