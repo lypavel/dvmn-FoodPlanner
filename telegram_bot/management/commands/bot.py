@@ -34,9 +34,7 @@ class BotStates(StatesGroup):
 def start(message: Message) -> None:
     bot.reset_data(message.from_user.id, message.chat.id)
 
-    welcome_image = Path(settings.BASE_DIR) \
-        / settings.STATIC_URL[1:] \
-        / 'welcome.jpg'
+    welcome_image = Path(settings.STATIC_ROOT) / 'welcome.jpg'
     bot.send_photo(
         message.chat.id,
         open(welcome_image, 'rb'),
@@ -192,11 +190,9 @@ def show_recipe(call: CallbackQuery) -> None:
         current_recipe = data['recipes'][data['current_recipe_index']]
 
     if current_recipe.image:
-        image_path = Path(settings.BASE_DIR) / current_recipe.image.url[1:]
+        image_path = Path(settings.MEDIA_ROOT) / current_recipe.image.url[1:]
     else:
-        image_path = Path(settings.BASE_DIR) \
-            / settings.STATIC_URL[1:] \
-            / 'default.jpg'
+        image_path = Path(settings.STATIC_ROOT) / 'default.jpg'
 
     if image_path.exists():
         bot.send_photo(
