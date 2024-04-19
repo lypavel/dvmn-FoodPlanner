@@ -20,10 +20,13 @@ pip install -r requirements.txt
 О том, как получить токен для телеграм бота, вы можете узнать в [документации к Telegram Bot API](https://core.telegram.org/bots/features#botfather).
 
 ```ini
-ALLOWED_HOSTS='host1,host2'  # белый список хостов
-DEBUG=True/False  # отладочный режим
-SECRET_KEY='django_secret_key'  # секретный ключ django проекта
-TELEGRAM_BOT_TOKEN='token'  # токен телеграм бота
+ALLOWED_HOSTS='host1,host2'                 # белый список хостов
+DEBUG=True                                  # отладочный режим
+MEDIA_ROOT='/home/user/project/media'       # путь до медиа данных
+SECRET_KEY='django_secret_key'              # секретный ключ django проекта
+STATIC_ROOT='/home/user/project/static'     # путь до статики
+STATIC_URL='static/'                        # адрес статики
+TELEGRAM_BOT_TOKEN='token'                  # токен телеграм бота
 ```
 
 ## Как запустить
