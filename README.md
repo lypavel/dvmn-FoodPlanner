@@ -4,7 +4,7 @@
 
 ## Пример взаимодействия с ботом
 
-![FlowerBot-Example]()
+![RecipeBot-Example](https://github.com/lypavel/dvmn-FoodPlanner/assets/157053921/45da2103-0027-40af-b149-1b11d3641ca9)
 
 ## Установка
 
@@ -28,7 +28,7 @@ TELEGRAM_BOT_TOKEN='token'  # токен телеграм бота
 
 ## Как запустить
 
-1. Наполните базу данных, с которой должен будет работать бот (или используйте нашу [тестовую]()).
+1. Наполните базу данных, с которой должен будет работать бот (или используйте нашу [тестовую](https://github.com/lypavel/dvmn-FoodPlanner/files/15041969/db.zip)).
 2. Создайте суперпользователя для доступа в Django-админку:
     ```python
     python3 manage.py createsuperuser
