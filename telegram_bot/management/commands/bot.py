@@ -191,10 +191,14 @@ def show_recipe(call: CallbackQuery) -> None:
 
         current_recipe = data['recipes'][data['current_recipe_index']]
 
-    # TODO: Add default image if recipe.image does not exists
     if current_recipe.image:
         image_path = Path(settings.BASE_DIR) / current_recipe.image.url[1:]
+    else:
+        image_path = Path(settings.BASE_DIR) \
+            / settings.STATIC_URL[1:] \
+            / 'default.jpg'
 
+    if image_path.exists():
         bot.send_photo(
             chat_id,
             open(image_path, 'rb')
