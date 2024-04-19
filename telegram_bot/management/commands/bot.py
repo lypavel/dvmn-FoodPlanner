@@ -15,6 +15,7 @@ from telegram_bot.management.commands.bot_utils import bot_buttons as btn
 from telegram_bot.management.commands.bot_utils import bot_messages as msg
 
 from pathlib import Path
+import phonenumbers
 
 
 state_storage = StateMemoryStorage()
@@ -25,7 +26,7 @@ bot = telebot.TeleBot(token=settings.TELEGRAM_BOT_TOKEN,
 class BotStates(StatesGroup):
     approve_pd = State()
     get_client_name = State()
-    get_client_phone_number = State()
+    get_valid_phone = State()
     show_recipe = State()
     show_instructions = State()
 
@@ -132,21 +133,42 @@ def get_client_phone_number(message: Message):
         message.chat.id,
         '\n'.join([msg.generate_user_greeting(name), msg.GET_CLIENT_PHONE])
     )
-    bot.set_state(message.from_user.id, BotStates.get_client_phone_number)
+
+    bot.register_next_step_handler(message, get_valid_phone, name)
 
 
-@bot.message_handler(state=BotStates.get_client_phone_number,
+def get_valid_phone(message, name):
+    if message.text.isalpha():
+        bot.send_message(message.chat.id, msg.GET_CLIENT_VALID_PHONE)
+        return bot.register_next_step_handler(message, get_valid_phone, name)
+
+    phonenumber_parts = phonenumbers.parse(message.text, "RU")
+    if not phonenumbers.is_valid_number(phonenumber_parts):
+        bot.send_message(message.chat.id, msg.GET_CLIENT_VALID_PHONE)
+        return bot.register_next_step_handler(message, get_valid_phone, name)
+
+    phonenumber = phonenumbers.format_number(
+        phonenumber_parts,
+        phonenumbers.PhoneNumberFormat.E164
+    )
+    try:
+        get_object_or_404(Client, phonenumber=phonenumber)
+        bot.send_message(message.chat.id, msg.GET_EXISTING_PHONE)
+        return bot.register_next_step_handler(message, get_valid_phone, name)
+
+    except Http404:
+        Client.objects.create(
+            telegram_id=message.from_user.id,
+            name=name,
+            phonenumber=phonenumber,
+        )
+        bot.send_message(message.chat.id, msg.GET_PHONE_CONFIRMATION)
+    bot.set_state(message.from_user.id, BotStates.get_valid_phone)
+
+
+@bot.message_handler(state=BotStates.get_valid_phone,
                      func=lambda message: True)
 def proccess_client_information(message: Message) -> None:
-    with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
-        user_name = data['user_name']
-    user_phone = message.text
-
-    Client.objects.create(
-        telegram_id=message.from_user.id,
-        name=user_name,
-        phonenumber=user_phone,
-    )
 
     inline_keyboard = InlineKeyboardMarkup(row_width=1)
     inline_keyboard.add(

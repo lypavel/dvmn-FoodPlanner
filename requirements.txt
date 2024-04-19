@@ -2,3 +2,4 @@ Django==5.0.4
 environs==11.0.0
 pillow==10.3.0
 pyTelegramBotAPI==4.17.0
+phonenumbers==8.13.34
