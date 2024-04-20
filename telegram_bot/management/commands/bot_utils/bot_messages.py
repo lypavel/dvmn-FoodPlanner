@@ -29,8 +29,12 @@ NO_RECIPES = 'Не найдено ни одного рецепта. Попроб
 
 GET_CLIENT_NAME = 'Отлично. Скажите, как мы можем к Вам обращаться?'
 GET_CLIENT_PHONE = 'Теперь введите ваш номер телефона.'
-GET_CLIENT_VALID_PHONE = 'Вероятно в номере телефона допущена ошибка. Попробуйте снова.'
-GET_EXISTING_PHONE ='Этот номер телефона уже используется. Попробуйте ввести другой номер.'
+GET_CLIENT_VALID_PHONE = (
+    'Вероятно в номере телефона допущена ошибка. Попробуйте снова.'
+)
+GET_EXISTING_PHONE = (
+    'Этот номер телефона уже используется. Попробуйте ввести другой номер.'
+)
 GET_PHONE_CONFIRMATION = 'Это действительно ваш номер телефона?'
 
 
@@ -60,5 +64,3 @@ def generate_recipe_instructions(recipe: Recipe) -> str:
 
     return (f'**Продукты**:\n{ingredients}\n\n'
             f'**Способ приготовления:**\n\n{recipe.instruction}')
-
-    # return '\n'.join(recipe.ingredients.all())
