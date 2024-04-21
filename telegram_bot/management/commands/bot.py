@@ -26,7 +26,6 @@ bot = telebot.TeleBot(token=settings.TELEGRAM_BOT_TOKEN,
 class BotStates(StatesGroup):
     approve_pd = State()
     get_client_name = State()
-    get_valid_phone = State()
     show_recipe = State()
     show_instructions = State()
 
@@ -157,18 +156,13 @@ def get_valid_phone(message, name):
         return bot.register_next_step_handler(message, get_valid_phone, name)
 
     except Http404:
-        Client.objects.create(
-            telegram_id=message.from_user.id,
-            name=name,
-            phonenumber=phonenumber,
-        )
-        bot.send_message(message.chat.id, msg.GET_PHONE_CONFIRMATION)
-    bot.set_state(message.from_user.id, BotStates.get_valid_phone)
+        pass
 
-
-@bot.message_handler(state=BotStates.get_valid_phone,
-                     func=lambda message: True)
-def proccess_client_information(message: Message) -> None:
+    Client.objects.create(
+        telegram_id=message.from_user.id,
+        name=name,
+        phonenumber=phonenumber,
+    )
 
     inline_keyboard = InlineKeyboardMarkup(row_width=1)
     inline_keyboard.add(

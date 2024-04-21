@@ -35,7 +35,6 @@ GET_CLIENT_VALID_PHONE = (
 GET_EXISTING_PHONE = (
     'Этот номер телефона уже используется. Попробуйте ввести другой номер.'
 )
-GET_PHONE_CONFIRMATION = 'Это действительно ваш номер телефона?'
 
 
 def generate_user_greeting(name: str) -> str:
